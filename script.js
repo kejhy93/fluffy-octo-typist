@@ -55,6 +55,7 @@ class TypingTutor {
         this.initLesson = this.initLesson.bind(this);
         this.changeLessonLength = this.changeLessonLength.bind(this);
         this.toggleTheme = this.toggleTheme.bind(this);
+        this.handleStorageChange = this.handleStorageChange.bind(this);
 
         this.themeToggleElement = null;
         this.applyTheme(this.getInitialTheme());
@@ -92,6 +93,13 @@ class TypingTutor {
         this.userInputElement.focus(); // Let the user keep typing after clicking the button
     }
 
+    handleStorageChange(event) {
+        // Fired when another tab changes storage; the key is null when storage is cleared
+        if (event.key === 'theme' || event.key === null) {
+            this.applyTheme(this.getInitialTheme());
+        }
+    }
+
     initLesson() {
         // Assign DOM elements inside initLesson, so they are retrieved when the DOM is ready or fixture is set
         this.lessonTextElement = document.getElementById('lesson-text');
@@ -125,7 +133,11 @@ class TypingTutor {
         this.userInputElement.addEventListener('input', this.handleUserInput);
         this.restartButton.addEventListener('click', this.initLesson);
         this.lessonLengthElement.addEventListener('change', this.changeLessonLength);
-        this.themeToggleElement.addEventListener('click', this.toggleTheme);
+        window.addEventListener('storage', this.handleStorageChange);
+        // A cached copy of the page may not have the button yet; the lesson should still work
+        if (this.themeToggleElement) {
+            this.themeToggleElement.addEventListener('click', this.toggleTheme);
+        }
     }
 
     changeLessonLength() {

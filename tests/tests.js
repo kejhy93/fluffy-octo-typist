@@ -651,5 +651,38 @@ QUnit.module('Typing Tutor', function (hooks) {
             window.typingTutor.themeToggleElement.click();
             assert.equal(document.documentElement.dataset.theme, 'light', 'One click should switch the theme exactly once');
         });
+
+        QUnit.test('initLesson: still works on a page without the toggle button', function (assert) {
+            window.typingTutor.themeToggleElement.remove();
+            window.typingTutor.initLesson();
+
+            assert.equal(window.typingTutor.themeToggleElement, null, 'Toggle should be missing');
+            assert.ok(window.typingTutor.virtualKeyboardElement.querySelector('.key'), 'Lesson should still be set up');
+        });
+
+        QUnit.test('storage event: follows a theme change from another tab', function (assert) {
+            localStorage.setItem('theme', 'dark');
+            window.dispatchEvent(new StorageEvent('storage', { key: 'theme', newValue: 'dark' }));
+
+            assert.equal(document.documentElement.dataset.theme, 'dark', 'Theme should follow the other tab');
+            assert.equal(window.typingTutor.themeToggleElement.textContent, 'Light mode', 'Label should match the theme');
+
+            window.typingTutor.themeToggleElement.click();
+            assert.equal(localStorage.getItem('theme'), 'light', 'The next toggle should start from the synced theme');
+        });
+
+        QUnit.test('storage event: falls back to the system preference when storage is cleared', function (assert) {
+            stubSystemTheme('dark');
+            window.dispatchEvent(new StorageEvent('storage', { key: null }));
+
+            assert.equal(document.documentElement.dataset.theme, 'dark', 'Theme should follow the system preference');
+        });
+
+        QUnit.test('storage event: ignores changes to other keys', function (assert) {
+            localStorage.setItem('theme', 'dark');
+            window.dispatchEvent(new StorageEvent('storage', { key: 'something-else' }));
+
+            assert.equal(document.documentElement.dataset.theme, 'light', 'Theme should not change');
+        });
     });
 });
