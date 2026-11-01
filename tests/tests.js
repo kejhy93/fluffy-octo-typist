@@ -482,4 +482,95 @@ QUnit.module('Typing Tutor', function (hooks) {
 
         console.log('========= TEST DONE ============');
     });
+
+    function selectLessonLength(length) {
+        window.typingTutor.lessonLengthElement.value = length;
+        window.typingTutor.lessonLengthElement.dispatchEvent(new Event('change'));
+    }
+
+    QUnit.test('Lesson Length: lessons get longer from short to long and are typeable', function (assert) {
+        const wordCounts = { short: [5, 12], medium: [25, 30], long: [70, 80] };
+
+        Object.keys(wordCounts).forEach(function (length) {
+            const [min, max] = wordCounts[length];
+            window.typingTutor.lessons[length].forEach(function (lesson) {
+                const count = lesson.split(' ').length;
+                assert.ok(count >= min && count <= max, `${length} lesson should have ${min}-${max} words, has ${count}`);
+                assert.ok(/^[a-z]+( [a-z]+)*$/.test(lesson), `${length} lesson should only use lowercase words and single spaces`);
+            });
+        });
+    });
+
+    QUnit.test('Lesson Length: changing the length loads its first lesson and resets progress', function (assert) {
+        window.typingTutor.currentLessonIndex = 2;
+        window.typingTutor.userInputElement.value = 'the ';
+        window.typingTutor.userInputElement.dispatchEvent(new Event('input'));
+
+        ['medium', 'long', 'short'].forEach(function (length) {
+            selectLessonLength(length);
+
+            assert.equal(window.typingTutor.currentLesson.join(' '), window.typingTutor.lessons[length][0], `First ${length} lesson should be loaded`);
+            assert.equal(window.typingTutor.lessonTextElement.textContent, window.typingTutor.lessons[length][0], `First ${length} lesson should be rendered`);
+            assert.equal(window.typingTutor.userInputElement.value, '', 'User input should be cleared');
+            assert.equal(window.typingTutor.currentWordIndex, 0, 'currentWordIndex should be reset');
+        });
+    });
+
+    QUnit.test('Lesson Length: restarting resets progress but keeps the selected length and lesson', function (assert) {
+        selectLessonLength('long');
+        window.typingTutor.currentLessonIndex = 1;
+        window.typingTutor.initLesson();
+
+        const lesson = window.typingTutor.lessons.long[1];
+        window.typingTutor.userInputElement.value = lesson.split(' ')[0] + ' ';
+        window.typingTutor.userInputElement.dispatchEvent(new Event('input'));
+        assert.equal(window.typingTutor.currentWordIndex, 1, 'Progress should be made before restarting');
+
+        window.typingTutor.restartButton.click();
+
+        assert.equal(window.typingTutor.userInputElement.value, '', 'User input should be cleared after restart');
+        assert.equal(window.typingTutor.currentWordIndex, 0, 'currentWordIndex should be reset after restart');
+        assert.equal(window.typingTutor.correctChars, 0, 'correctChars should be reset after restart');
+        assert.equal(window.typingTutor.lessonLengthElement.value, 'long', 'Selected length should be kept after restart');
+        assert.equal(window.typingTutor.currentLesson.join(' '), lesson, 'Current long lesson should be kept after restart');
+
+        window.typingTutor.currentLessonIndex = 0;
+    });
+
+    QUnit.test('Lesson Length: completing a lesson moves to the next one of the same length', function (assert) {
+        const done = assert.async();
+        const originalAlert = window.alert;
+        window.alert = function () {};
+
+        selectLessonLength('medium');
+        window.typingTutor.userInputElement.value = window.typingTutor.lessons.medium[0];
+        window.typingTutor.userInputElement.dispatchEvent(new Event('input'));
+
+        setTimeout(function () {
+            assert.equal(window.typingTutor.currentLesson.join(' '), window.typingTutor.lessons.medium[1], 'Second medium lesson should be loaded');
+
+            window.alert = originalAlert;
+            window.typingTutor.currentLessonIndex = 0;
+            done();
+        }, 200);
+    });
+
+    QUnit.test('Lesson Length: repeatedly changing the length does not stack input listeners', function (assert) {
+        selectLessonLength('medium');
+        selectLessonLength('long');
+        window.typingTutor.restartButton.click();
+
+        const originalUpdateStats = window.typingTutor.updateStats;
+        let calls = 0;
+        window.typingTutor.updateStats = function () {
+            calls++;
+        };
+
+        window.typingTutor.userInputElement.value = 'l';
+        window.typingTutor.userInputElement.dispatchEvent(new Event('input'));
+
+        assert.equal(calls, 1, 'A single input event should be handled exactly once');
+
+        window.typingTutor.updateStats = originalUpdateStats;
+    });
 });
