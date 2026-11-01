@@ -489,7 +489,7 @@ QUnit.module('Typing Tutor', function (hooks) {
     }
 
     QUnit.test('Lesson Length: lessons get longer from short to long and are typeable', function (assert) {
-        const wordCounts = { short: [1, 15], medium: [20, 40], long: [60, 100] };
+        const wordCounts = { short: [5, 12], medium: [25, 30], long: [70, 80] };
 
         Object.keys(wordCounts).forEach(function (length) {
             const [min, max] = wordCounts[length];
@@ -516,11 +516,25 @@ QUnit.module('Typing Tutor', function (hooks) {
         });
     });
 
-    QUnit.test('Lesson Length: restarting keeps the selected length and lesson', function (assert) {
+    QUnit.test('Lesson Length: restarting resets progress but keeps the selected length and lesson', function (assert) {
         selectLessonLength('long');
+        window.typingTutor.currentLessonIndex = 1;
+        window.typingTutor.initLesson();
+
+        const lesson = window.typingTutor.lessons.long[1];
+        window.typingTutor.userInputElement.value = lesson.split(' ')[0] + ' ';
+        window.typingTutor.userInputElement.dispatchEvent(new Event('input'));
+        assert.equal(window.typingTutor.currentWordIndex, 1, 'Progress should be made before restarting');
+
         window.typingTutor.restartButton.click();
 
-        assert.equal(window.typingTutor.currentLesson.join(' '), window.typingTutor.lessons.long[0], 'Long lesson should still be loaded after restart');
+        assert.equal(window.typingTutor.userInputElement.value, '', 'User input should be cleared after restart');
+        assert.equal(window.typingTutor.currentWordIndex, 0, 'currentWordIndex should be reset after restart');
+        assert.equal(window.typingTutor.correctChars, 0, 'correctChars should be reset after restart');
+        assert.equal(window.typingTutor.lessonLengthElement.value, 'long', 'Selected length should be kept after restart');
+        assert.equal(window.typingTutor.currentLesson.join(' '), lesson, 'Current long lesson should be kept after restart');
+
+        window.typingTutor.currentLessonIndex = 0;
     });
 
     QUnit.test('Lesson Length: completing a lesson moves to the next one of the same length', function (assert) {
