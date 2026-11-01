@@ -1,3 +1,55 @@
+:root {
+    color-scheme: light;
+    --page-bg: #f4f4f4;
+    --text: #333;
+    --surface: #fff;
+    --container-shadow: rgba(0, 0, 0, 0.1);
+    --heading: #0056b3;
+    --input-bg: #fff;
+    --input-border: #ccc;
+    --lesson-bg: #e9e9e9;
+    --lesson-border: #ddd;
+    --keyboard-bg: #eee;
+    --key-bg: #ddd;
+    --key-border: #bbb;
+    --key-active-bg: #a0d2eb;
+    --key-active-shadow: #89cff0;
+    --key-correct-bg: #c8e6c9;
+    --key-incorrect-bg: #ffcdd2;
+    --button-bg: #007bff;
+    --button-hover-bg: #0056b3;
+    --correct-char: green;
+    --incorrect-char: red;
+    --current-char-bg: yellow;
+    --current-char-text: #333;
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --page-bg: #121212;
+    --text: #e0e0e0;
+    --surface: #1e1e1e;
+    --container-shadow: rgba(0, 0, 0, 0.6);
+    --heading: #6db3ff;
+    --input-bg: #2a2a2a;
+    --input-border: #555;
+    --lesson-bg: #2a2a2a;
+    --lesson-border: #3a3a3a;
+    --keyboard-bg: #2a2a2a;
+    --key-bg: #3a3a3a;
+    --key-border: #1a1a1a;
+    --key-active-bg: #1f6f94;
+    --key-active-shadow: #16526e;
+    --key-correct-bg: #2e6b33;
+    --key-incorrect-bg: #8a2f35;
+    --button-bg: #0b6bcb;
+    --button-hover-bg: #0056b3;
+    --correct-char: #66bb6a;
+    --incorrect-char: #ff6b6b;
+    --current-char-bg: #ffd54f;
+    --current-char-text: #121212;
+}
+
 body {
     font-family: Arial, sans-serif;
     display: flex;
@@ -5,22 +57,22 @@ body {
     align-items: center;
     min-height: 100vh;
     margin: 0;
-    background-color: #f4f4f4;
-    color: #333;
+    background-color: var(--page-bg);
+    color: var(--text);
 }
 
 .container {
-    background-color: #fff;
+    background-color: var(--surface);
     padding: 30px;
     border-radius: 8px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 15px var(--container-shadow);
     text-align: center;
     width: 90%;
     max-width: 800px;
 }
 
 h1 {
-    color: #0056b3;
+    color: var(--heading);
     margin-bottom: 20px;
 }
 
@@ -32,14 +84,21 @@ h1 {
 #lesson-length {
     margin-left: 5px;
     padding: 5px 10px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--input-border);
     border-radius: 5px;
     font-size: 1em;
+    background-color: var(--input-bg);
+    color: var(--text);
+}
+
+#theme-toggle {
+    margin-left: 10px;
+    padding: 5px 10px;
 }
 
 #lesson-text {
-    background-color: #e9e9e9;
-    border: 1px solid #ddd;
+    background-color: var(--lesson-bg);
+    border: 1px solid var(--lesson-border);
     padding: 20px;
     margin-bottom: 20px;
     font-size: 1.5em;
@@ -56,15 +115,17 @@ h1 {
     padding: 20px;
     margin-bottom: 20px;
     font-size: 1.5em;
-    border: 1px solid #ccc;
+    border: 1px solid var(--input-border);
     border-radius: 5px;
+    background-color: var(--input-bg);
+    color: var(--text);
     box-sizing: border-box; /* Include padding in width/height */
     resize: none; /* Disable textarea resizing */
     outline: none;
 }
 
 #virtual-keyboard {
-    background-color: #eee;
+    background-color: var(--keyboard-bg);
     padding: 15px;
     border-radius: 5px;
     margin-bottom: 20px;
@@ -80,8 +141,8 @@ h1 {
 }
 
 .key {
-    background-color: #ddd;
-    border: 1px solid #bbb;
+    background-color: var(--key-bg);
+    border: 1px solid var(--key-border);
     border-radius: 4px;
     padding: 10px 15px;
     margin: 2px;
@@ -89,7 +150,7 @@ h1 {
     text-align: center;
     font-size: 1.1em;
     cursor: pointer;
-    box-shadow: 0 2px 0 #bbb;
+    box-shadow: 0 2px 0 var(--key-border);
     user-select: none; /* Prevent text selection on keys */
 }
 
@@ -98,16 +159,16 @@ h1 {
 }
 
 .key.active {
-    background-color: #a0d2eb; /* Highlight active key */
-    box-shadow: 0 2px 0 #89cff0;
+    background-color: var(--key-active-bg); /* Highlight active key */
+    box-shadow: 0 2px 0 var(--key-active-shadow);
 }
 
 .key.correct {
-    background-color: #c8e6c9; /* Green for correct input */
+    background-color: var(--key-correct-bg); /* Green for correct input */
 }
 
 .key.incorrect {
-    background-color: #ffcdd2; /* Red for incorrect input */
+    background-color: var(--key-incorrect-bg); /* Red for incorrect input */
 }
 
 .stats {
@@ -118,7 +179,7 @@ h1 {
 }
 
 button {
-    background-color: #007bff;
+    background-color: var(--button-bg);
     color: white;
     border: none;
     padding: 10px 20px;
@@ -129,20 +190,21 @@ button {
 }
 
 button:hover {
-    background-color: #0056b3;
+    background-color: var(--button-hover-bg);
 }
 
 .correct-char {
-    color: green;
+    color: var(--correct-char);
 }
 
 .incorrect-char {
-    color: red;
+    color: var(--incorrect-char);
     text-decoration: underline;
 }
 
 .current-char {
-    background-color: yellow;
+    background-color: var(--current-char-bg);
+    color: var(--current-char-text);
     border-radius: 3px;
     padding: 0 2px;
 }

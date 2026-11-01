@@ -573,4 +573,83 @@ QUnit.module('Typing Tutor', function (hooks) {
 
         window.typingTutor.updateStats = originalUpdateStats;
     });
+
+    QUnit.module('Theme', function (themeHooks) {
+        const originalMatchMedia = window.matchMedia;
+
+        function stubSystemTheme(theme) {
+            window.matchMedia = function (query) {
+                return { matches: query === `(prefers-color-scheme: ${theme})` };
+            };
+        }
+
+        themeHooks.beforeEach(function () {
+            localStorage.removeItem('theme');
+            window.typingTutor.applyTheme('light');
+        });
+
+        themeHooks.afterEach(function () {
+            window.matchMedia = originalMatchMedia;
+            localStorage.removeItem('theme');
+            window.typingTutor.applyTheme('light');
+        });
+
+        QUnit.test('toggle: switches the theme both ways and updates the label', function (assert) {
+            const toggle = window.typingTutor.themeToggleElement;
+            assert.equal(toggle.textContent, 'Dark mode', 'Light theme offers dark mode');
+
+            toggle.click();
+            assert.equal(document.documentElement.dataset.theme, 'dark', 'Dark theme should be applied');
+            assert.equal(toggle.textContent, 'Light mode', 'Dark theme offers light mode');
+
+            toggle.click();
+            assert.equal(document.documentElement.dataset.theme, 'light', 'Light theme should be applied');
+            assert.equal(toggle.textContent, 'Dark mode', 'Light theme offers dark mode again');
+        });
+
+        QUnit.test('toggle: saves the choice, which wins over the system preference', function (assert) {
+            window.typingTutor.themeToggleElement.click();
+            assert.equal(localStorage.getItem('theme'), 'dark', 'Choice should be saved');
+
+            stubSystemTheme('light');
+            assert.equal(window.typingTutor.getInitialTheme(), 'dark', 'Saved choice should win');
+        });
+
+        QUnit.test('getInitialTheme: follows the system preference when nothing is saved', function (assert) {
+            stubSystemTheme('dark');
+            assert.equal(window.typingTutor.getInitialTheme(), 'dark', 'Should follow a dark system');
+
+            stubSystemTheme('light');
+            assert.equal(window.typingTutor.getInitialTheme(), 'light', 'Should follow a light system');
+        });
+
+        QUnit.test('getInitialTheme: ignores an unknown saved value', function (assert) {
+            localStorage.setItem('theme', 'sepia');
+            stubSystemTheme('dark');
+            assert.equal(window.typingTutor.getInitialTheme(), 'dark', 'Should fall back to the system preference');
+        });
+
+        QUnit.test('toggle: keeps lesson progress and returns focus to the input', function (assert) {
+            const input = window.typingTutor.userInputElement;
+            input.value = 'the ';
+            input.dispatchEvent(new Event('input'));
+
+            window.typingTutor.themeToggleElement.focus();
+            window.typingTutor.themeToggleElement.click();
+
+            assert.equal(input.value, 'the ', 'Typed text should be kept');
+            assert.equal(window.typingTutor.currentWordIndex, 1, 'Word progress should be kept');
+            assert.equal(document.activeElement, input, 'Focus should return to the input');
+        });
+
+        QUnit.test('initLesson: keeps the current theme and does not stack toggle listeners', function (assert) {
+            window.typingTutor.themeToggleElement.click();
+            window.typingTutor.initLesson();
+            assert.equal(document.documentElement.dataset.theme, 'dark', 'Theme should survive a restart');
+            assert.equal(window.typingTutor.themeToggleElement.textContent, 'Light mode', 'Label should match the theme');
+
+            window.typingTutor.themeToggleElement.click();
+            assert.equal(document.documentElement.dataset.theme, 'light', 'One click should switch the theme exactly once');
+        });
+    });
 });
