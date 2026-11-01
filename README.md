@@ -4,7 +4,7 @@ A simple web-based application to help you learn and practice touch typing.
 
 ## Features
 
-- Interactive typing lessons.
+- Interactive typing lessons in short, medium, or long lengths.
 - Real-time Words Per Minute (WPM) and Accuracy tracking.
 - Visual feedback for correct and incorrect keystrokes.
 - Virtual keyboard highlighting the next key to press.
@@ -12,10 +12,11 @@ A simple web-based application to help you learn and practice touch typing.
 ## How to Use
 
 1.  **Open `index.html`:** Simply open the `index.html` file in your web browser.
-2.  **Start Typing:** The lesson text will appear, and you can start typing in the input box below.
-3.  **Monitor Your Progress:** WPM and Accuracy will update as you type.
-4.  **Virtual Keyboard:** Observe the virtual keyboard for guidance on which key to press next.
-5.  **Restart Lesson:** Click the "Restart Lesson" button to try the current lesson again.
+2.  **Choose a Length:** Pick short, medium, or long from the "Text length" menu.
+3.  **Start Typing:** The lesson text will appear, and you can start typing in the input box below.
+4.  **Monitor Your Progress:** WPM and Accuracy will update as you type.
+5.  **Virtual Keyboard:** Observe the virtual keyboard for guidance on which key to press next.
+6.  **Restart Lesson:** Click the "Restart Lesson" button to try the current lesson again.
 
 ## Project Structure
 

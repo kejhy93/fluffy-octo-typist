@@ -9,6 +9,14 @@
 <body>
     <div class="container">
         <h1>Touch Typing Tutor</h1>
+        <div class="lesson-options">
+            <label for="lesson-length">Text length:</label>
+            <select id="lesson-length">
+                <option value="short" selected>Short</option>
+                <option value="medium">Medium</option>
+                <option value="long">Long</option>
+            </select>
+        </div>
         <div id="lesson-text"></div>
         <textarea id="user-input" placeholder="Start typing here..." autofocus></textarea>
         <div id="virtual-keyboard">
