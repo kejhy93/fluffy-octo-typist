@@ -652,6 +652,27 @@ QUnit.module('Typing Tutor', function (hooks) {
             assert.equal(document.documentElement.dataset.theme, 'light', 'One click should switch the theme exactly once');
         });
 
+        QUnit.test('toggle: tells the user when the choice cannot be saved', function (assert) {
+            const originalSetItem = Storage.prototype.setItem;
+            Storage.prototype.setItem = function () {
+                throw new Error('Storage is blocked');
+            };
+
+            const toggle = window.typingTutor.themeToggleElement;
+            const status = window.typingTutor.themeStatusElement;
+            assert.equal(status.textContent, '', 'No message before a failed save');
+
+            toggle.click();
+            assert.equal(document.documentElement.dataset.theme, 'dark', 'Theme should still be applied');
+            assert.ok(status.textContent.includes('reset'), 'Message should explain the theme will reset');
+            assert.equal(document.activeElement, window.typingTutor.userInputElement, 'Focus should return to the input');
+
+            Storage.prototype.setItem = originalSetItem;
+
+            toggle.click();
+            assert.equal(status.textContent, '', 'Message should clear after a successful save');
+        });
+
         QUnit.test('initLesson: still works on a page without the toggle button', function (assert) {
             window.typingTutor.themeToggleElement.remove();
             window.typingTutor.initLesson();

@@ -58,6 +58,7 @@ class TypingTutor {
         this.handleStorageChange = this.handleStorageChange.bind(this);
 
         this.themeToggleElement = null;
+        this.themeStatusElement = null;
         this.applyTheme(this.getInitialTheme());
     }
 
@@ -85,10 +86,15 @@ class TypingTutor {
     toggleTheme() {
         const theme = this.theme === 'dark' ? 'light' : 'dark';
         this.applyTheme(theme);
+        let statusMessage = '';
         try {
             localStorage.setItem('theme', theme);
         } catch (e) {
             // Storage can be blocked by the browser; the theme still applies to this page
+            statusMessage = "Your browser blocked saving this choice, so the theme will reset when the page reloads.";
+        }
+        if (this.themeStatusElement) {
+            this.themeStatusElement.textContent = statusMessage;
         }
         this.userInputElement.focus(); // Let the user keep typing after clicking the button
     }
@@ -110,6 +116,7 @@ class TypingTutor {
         this.restartButton = document.getElementById('restart-button');
         this.lessonLengthElement = document.getElementById('lesson-length');
         this.themeToggleElement = document.getElementById('theme-toggle');
+        this.themeStatusElement = document.getElementById('theme-status');
         this.applyTheme(this.theme);
 
         this.currentLesson = this.lessons[this.lessonLengthElement.value][this.currentLessonIndex].split(' ');
