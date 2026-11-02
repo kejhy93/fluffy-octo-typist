@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Touch Typing Tutor</title>
     <link rel="stylesheet" href="./style.css">
+    <!-- Loaded in the head so the saved theme applies before the first paint -->
+    <script src="./script.js"></script>
 </head>
 <body>
     <div class="container">
@@ -16,6 +18,8 @@
                 <option value="medium">Medium</option>
                 <option value="long">Long</option>
             </select>
+            <button id="theme-toggle" type="button"></button>
+            <p id="theme-status" role="status"></p>
         </div>
         <div id="lesson-text"></div>
         <textarea id="user-input" placeholder="Start typing here..." autofocus></textarea>
@@ -28,6 +32,5 @@
         </div>
         <button id="restart-button">Restart Lesson</button>
     </div>
-    <script src="./script.js"></script>
 </body>
 </html>

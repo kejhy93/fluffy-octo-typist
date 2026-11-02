@@ -54,6 +54,56 @@ class TypingTutor {
         this.handleUserInput = this.handleUserInput.bind(this);
         this.initLesson = this.initLesson.bind(this);
         this.changeLessonLength = this.changeLessonLength.bind(this);
+        this.toggleTheme = this.toggleTheme.bind(this);
+        this.handleStorageChange = this.handleStorageChange.bind(this);
+
+        this.themeToggleElement = null;
+        this.themeStatusElement = null;
+        this.applyTheme(this.getInitialTheme());
+    }
+
+    getInitialTheme() {
+        let savedTheme = null;
+        try {
+            savedTheme = localStorage.getItem('theme');
+        } catch (e) {
+            // Storage can be blocked by the browser; fall through to the system preference
+        }
+        if (savedTheme === 'light' || savedTheme === 'dark') {
+            return savedTheme;
+        }
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    applyTheme(theme) {
+        this.theme = theme;
+        document.documentElement.dataset.theme = theme;
+        if (this.themeToggleElement) {
+            this.themeToggleElement.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+        }
+    }
+
+    toggleTheme() {
+        const theme = this.theme === 'dark' ? 'light' : 'dark';
+        this.applyTheme(theme);
+        let statusMessage = '';
+        try {
+            localStorage.setItem('theme', theme);
+        } catch (e) {
+            // Storage can be blocked by the browser; the theme still applies to this page
+            statusMessage = "Your browser blocked saving this choice, so the theme will reset when the page reloads.";
+        }
+        if (this.themeStatusElement) {
+            this.themeStatusElement.textContent = statusMessage;
+        }
+        this.userInputElement.focus(); // Let the user keep typing after clicking the button
+    }
+
+    handleStorageChange(event) {
+        // Fired when another tab changes storage; the key is null when storage is cleared
+        if (event.key === 'theme' || event.key === null) {
+            this.applyTheme(this.getInitialTheme());
+        }
     }
 
     initLesson() {
@@ -65,6 +115,9 @@ class TypingTutor {
         this.accuracyElement = document.getElementById('accuracy');
         this.restartButton = document.getElementById('restart-button');
         this.lessonLengthElement = document.getElementById('lesson-length');
+        this.themeToggleElement = document.getElementById('theme-toggle');
+        this.themeStatusElement = document.getElementById('theme-status');
+        this.applyTheme(this.theme);
 
         this.currentLesson = this.lessons[this.lessonLengthElement.value][this.currentLessonIndex].split(' ');
         this.currentWordIndex = 0;
@@ -87,6 +140,11 @@ class TypingTutor {
         this.userInputElement.addEventListener('input', this.handleUserInput);
         this.restartButton.addEventListener('click', this.initLesson);
         this.lessonLengthElement.addEventListener('change', this.changeLessonLength);
+        window.addEventListener('storage', this.handleStorageChange);
+        // A cached copy of the page may not have the button yet; the lesson should still work
+        if (this.themeToggleElement) {
+            this.themeToggleElement.addEventListener('click', this.toggleTheme);
+        }
     }
 
     changeLessonLength() {

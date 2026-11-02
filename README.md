@@ -8,6 +8,7 @@ A simple web-based application to help you learn and practice touch typing.
 - Real-time Words Per Minute (WPM) and Accuracy tracking.
 - Visual feedback for correct and incorrect keystrokes.
 - Virtual keyboard highlighting the next key to press.
+- Light and dark mode: starts from your system preference and remembers your choice.
 
 ## How to Use
 
