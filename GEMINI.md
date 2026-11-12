@@ -65,6 +65,7 @@ This command will:
 - **Code Style:** The project follows a standard vanilla JavaScript style. Code is organized with a clear separation of concerns:
   - `index.html`: Structure
   - `style.css`: Presentation
-  - `script.js`: Logic
+  - `typing-session.js`: Typing Session rules (no DOM)
+  - `script.js`: Page logic
 - **CI/CD:** A GitHub Actions workflow is defined in `.github/workflows/ci.yml`. This workflow is expected to pass before merging any changes to the `main` branch.
 - **Dependencies:** Project dependencies are managed via `npm`. The `node_modules` directory is ignored by Git (as specified in `.gitignore`), and dependencies should always be installed by running `npm install`.

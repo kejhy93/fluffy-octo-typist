@@ -23,7 +23,8 @@ A simple web-based application to help you learn and practice touch typing.
 
 - `index.html`: The main HTML file that structures the web page.
 - `style.css`: Contains the CSS rules to style the application.
-- `script.js`: Implements the core logic of the typing tutor, including lesson management, input handling, and statistics calculation.
+- `typing-session.js`: The Typing Session: decides which characters are correct, what comes next, when the lesson is complete, and the WPM and accuracy. It has no DOM code.
+- `script.js`: Connects the page to the Typing Session: lesson selection, input handling, the virtual keyboard and the theme.
 - `README.md`: This file, providing information about the project.
 
 ## Publishing to GitHub Pages

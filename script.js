@@ -33,12 +33,7 @@ class TypingTutor {
         };
 
         this.currentLessonIndex = 0;
-        this.currentLesson = []; // Array of words for the current lesson
-        this.currentWordIndex = 0;
-        this.currentCharIndex = 0;
-        this.correctChars = 0;
-        this.totalChars = 0;
-        this.startTime = 0;
+        this.session = null; // The Typing Session for the Lesson on screen
         this.timerInterval = null;
         this.lessonCompleteTimeout = null;
 
@@ -119,18 +114,14 @@ class TypingTutor {
         this.themeStatusElement = document.getElementById('theme-status');
         this.applyTheme(this.theme);
 
-        this.currentLesson = this.lessons[this.lessonLengthElement.value][this.currentLessonIndex].split(' ');
-        this.currentWordIndex = 0;
-        this.currentCharIndex = 0;
-        this.correctChars = 0;
-        this.totalChars = 0;
-        this.startTime = 0;
+        this.session = new TypingSession(this.lessons[this.lessonLengthElement.value][this.currentLessonIndex]);
         this.wpmElement.textContent = '0';
         this.accuracyElement.textContent = '100%';
         this.userInputElement.value = '';
         this.userInputElement.disabled = false;
         this.userInputElement.focus();
         clearInterval(this.timerInterval);
+        this.timerInterval = null;
         clearTimeout(this.lessonCompleteTimeout);
         this.renderLessonText();
         this.renderVirtualKeyboard();
@@ -153,123 +144,63 @@ class TypingTutor {
     }
 
     handleUserInput() {
+        const snapshot = this.session.type(this.userInputElement.value, Date.now());
         this.startTimer();
-        this.updateCharacterFeedback();
-        this.handleLessonProgress();
-        this.updateStats();
-    }
-
-    updateCharacterFeedback() {
-        const typedText = this.userInputElement.value;
-        const lessonText = this.currentLesson.join(' ');
-        const allSpans = this.lessonTextElement.querySelectorAll('.char-span');
-
-        console.log('--- updateCharacterFeedback started ---');
-        console.log('typedText:', typedText);
-        console.log('lessonText:', lessonText);
-
-        allSpans.forEach(span => span.classList.remove('correct-char', 'incorrect-char', 'current-char'));
-
-        let newCorrectChars = 0;
-        let newTotalChars = 0;
-        let upToChar = -1;
-
-        for (let i = 0; i < typedText.length; i++) {
-            const charSpan = allSpans[i];
-            if (!charSpan) {
-                console.log(`Char span not found for index ${i}`);
-                continue;
-            }
-
-            newTotalChars++;
-            let charStatus = '';
-            if (typedText[i] === lessonText[i]) {
-                charSpan.classList.add('correct-char');
-                newCorrectChars++;
-                charStatus = 'correct-char';
-            } else {
-                charSpan.classList.add('incorrect-char');
-                charStatus = 'incorrect-char';
-            }
-            upToChar = i;
-            console.log(`Index: ${i}, Typed: '${typedText[i]}', Expected: '${lessonText[i]}', Status: ${charStatus}`);
-        }
-        
-        this.correctChars = newCorrectChars;
-        this.totalChars = newTotalChars;
-        console.log('New correctChars:', this.correctChars);
-        console.log('New totalChars:', this.totalChars);
-
-        // Highlight the next character
-        if (upToChar + 1 < allSpans.length) {
-            allSpans[upToChar + 1].classList.add('current-char');
-            this.highlightCurrentKey(lessonText[upToChar + 1]);
-            console.log('Highlighting next char:', lessonText[upToChar + 1], 'at index', upToChar + 1);
-        } else {
-            // End of lesson, clear highlight
-            this.highlightCurrentKey('');
-            console.log('End of lesson, clearing key highlight.');
-        }
-        console.log('--- updateCharacterFeedback finished ---');
-    }
-
-    handleLessonProgress() {
-        const typedText = this.userInputElement.value;
-        const lessonText = this.currentLesson.join(' ');
-        
-        // Check for word completion
-        const currentWordText = this.currentLesson[this.currentWordIndex];
-        const typedWords = typedText.split(' ');
-        const currentTypedWord = typedWords[this.currentWordIndex];
-
-        if (currentTypedWord === currentWordText && typedText.endsWith(' ')) {
-            // User has correctly typed a word and a space, advance
-            this.currentWordIndex++;
-            
-            // The input will not be cleared on word completion; it will be cleared on lesson completion.
-        }
-
-        // Check for lesson completion
-        console.log('--- handleLessonProgress: checking for lesson completion ---');
-        console.log(`typedText: "${typedText}" (length: ${typedText.length})`);
-        console.log(`lessonText: "${lessonText}" (length: ${lessonText.length})`);
-        if (typedText === lessonText) {
-            clearInterval(this.timerInterval);
-            this.userInputElement.disabled = true;
-            
-            this.lessonCompleteTimeout = setTimeout(() => {
-                alert('Lesson Completed! Well done!');
-                this.currentLessonIndex = (this.currentLessonIndex + 1) % this.lessons[this.lessonLengthElement.value].length;
-                this.initLesson();
-            }, 100);
+        this.renderProgress(snapshot);
+        this.showStats(snapshot);
+        if (snapshot.complete) {
+            this.completeLesson();
         }
     }
 
+    completeLesson() {
+        clearInterval(this.timerInterval);
+        this.userInputElement.disabled = true;
+
+        this.lessonCompleteTimeout = setTimeout(() => {
+            alert('Lesson Completed! Well done!');
+            this.currentLessonIndex = (this.currentLessonIndex + 1) % this.lessons[this.lessonLengthElement.value].length;
+            this.initLesson();
+        }, 100);
+    }
 
     renderLessonText() {
         this.lessonTextElement.innerHTML = '';
-        this.currentLesson.forEach((word, wordIndex) => {
+        const words = this.session.lessonText.split(' ');
+        words.forEach((word, wordIndex) => {
+            // Each word gets its own span so lines only break between words
             const wordSpan = document.createElement('span');
-            word.split('').forEach((char, charIndex) => {
-                const charSpan = document.createElement('span');
-                charSpan.textContent = char;
-                charSpan.classList.add('char-span'); // Add the new class
-                if (wordIndex === this.currentWordIndex && charIndex === this.currentCharIndex) {
-                    charSpan.classList.add('current-char');
-                }
-                wordSpan.appendChild(charSpan);
-            });
+            word.split('').forEach(char => wordSpan.appendChild(this.createCharSpan(char)));
             this.lessonTextElement.appendChild(wordSpan);
-            if (wordIndex < this.currentLesson.length - 1) {
-                const spaceSpan = document.createElement('span');
-                spaceSpan.textContent = ' ';
-                spaceSpan.classList.add('char-span'); // Add the new class
-                if (wordIndex === this.currentWordIndex - 1 && charIndex === this.currentCharIndex) { // Highlight space after completed word
-                    spaceSpan.classList.add('current-char');
-                }
-                this.lessonTextElement.appendChild(spaceSpan);
+            if (wordIndex < words.length - 1) {
+                this.lessonTextElement.appendChild(this.createCharSpan(' '));
             }
         });
+        this.renderProgress(this.session.snapshot());
+    }
+
+    createCharSpan(char) {
+        const charSpan = document.createElement('span');
+        charSpan.textContent = char;
+        charSpan.classList.add('char-span');
+        return charSpan;
+    }
+
+    // Paint a Typing Session snapshot onto the lesson text and the virtual keyboard
+    renderProgress(snapshot) {
+        const charSpans = this.lessonTextElement.querySelectorAll('.char-span');
+        charSpans.forEach((span, index) => {
+            span.classList.remove('correct-char', 'incorrect-char', 'current-char');
+            if (snapshot.chars[index] === 'correct') {
+                span.classList.add('correct-char');
+            } else if (snapshot.chars[index] === 'incorrect') {
+                span.classList.add('incorrect-char');
+            }
+            if (index === snapshot.nextIndex) {
+                span.classList.add('current-char');
+            }
+        });
+        this.highlightCurrentKey(snapshot.nextChar);
     }
 
     renderVirtualKeyboard() {
@@ -294,57 +225,33 @@ class TypingTutor {
     }
 
     highlightCurrentKey(expectedChar) {
-        console.log(`--- highlightCurrentKey started ---`);
-        console.log(`Expected char: '${expectedChar}'`);
         // Clear previous highlights
         document.querySelectorAll('.key.active').forEach(key => key.classList.remove('active'));
         document.querySelectorAll('.key.correct').forEach(key => key.classList.remove('correct'));
         document.querySelectorAll('.key.incorrect').forEach(key => key.classList.remove('incorrect'));
 
         if (!expectedChar) {
-            console.log('No expected character, clearing active highlights.');
-            console.log(`--- highlightCurrentKey finished ---`);
             return;
         }
 
-        // Find the key to highlight
-        let targetKey = expectedChar.toLowerCase();
-        if (expectedChar === ' ') {
-            targetKey = 'space';
-        }
-        console.log(`Target key: '${targetKey}'`);
-
+        const targetKey = expectedChar === ' ' ? 'space' : expectedChar.toLowerCase();
         const keyElement = this.virtualKeyboardElement.querySelector(`[data-key="${targetKey}"]`);
         if (keyElement) {
             keyElement.classList.add('active');
-            console.log(`Highlighting key element:`, keyElement);
-        } else {
-            console.log(`No key element found for targetKey: '${targetKey}'`);
         }
-        console.log(`--- highlightCurrentKey finished ---`);
     }
 
     startTimer() {
-        if (this.startTime === 0) {
-            this.startTime = new Date().getTime();
-            this.timerInterval = setInterval(() => this.updateStats(), 1000);
+        if (this.timerInterval === null) {
+            this.timerInterval = setInterval(() => this.showStats(this.session.stats(Date.now())), 1000);
         }
     }
 
-    updateStats() {
-        if (this.startTime === 0) return; // Do not update stats if the timer hasn't started
-
-        const currentTime = new Date().getTime();
-        const timeElapsedInMinutes = (currentTime - this.startTime) / 60000; // in minutes
-
-        if (timeElapsedInMinutes > 0) {
-            const wordsTyped = this.correctChars / 5; // Average word length is 5 characters
-            const wpm = Math.round(wordsTyped / timeElapsedInMinutes);
-            this.wpmElement.textContent = wpm;
-        }
-
-        const accuracy = this.totalChars > 0 ? Math.round((this.correctChars / this.totalChars) * 100) : 100;
-        this.accuracyElement.textContent = `${accuracy}%`;
+    // Show WPM and accuracy; null means the Typing Session has not started yet
+    showStats(stats) {
+        if (!stats) return;
+        this.wpmElement.textContent = stats.wpm;
+        this.accuracyElement.textContent = `${stats.accuracy}%`;
     }
 
     normalizeKey(key) {
@@ -391,12 +298,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const keyElement = window.typingTutor.virtualKeyboardElement.querySelector(`[data-key="${releasedKey}"]`);
             if (keyElement) {
                 keyElement.classList.remove('active');
-                const lessonText = window.typingTutor.currentLesson.join(' ');
-                const expectedChar = lessonText.length > 0 && window.typingTutor.userInputElement.value.length > 0 ? lessonText[window.typingTutor.userInputElement.value.length - 1] : '';
-                const currentTypedChar = window.typingTutor.userInputElement.value[window.typingTutor.userInputElement.value.length - 1];
+                const typedLength = window.typingTutor.userInputElement.value.length;
 
-                if (currentTypedChar !== undefined) { // Check if a character was actually typed
-                    if (currentTypedChar === expectedChar) {
+                if (typedLength > 0) { // Check if a character was actually typed
+                    // Characters past the end of the lesson have no status, so they count as incorrect
+                    if (window.typingTutor.session.snapshot().chars[typedLength - 1] === 'correct') {
                         keyElement.classList.add('correct');
                     } else {
                         keyElement.classList.add('incorrect');
