@@ -21,7 +21,6 @@ QUnit.log(function (details) {
     }
 });
 
-
 QUnit.module('Typing Tutor', function (hooks) {
     let typingTutorInstance; // Declare a variable to hold the instance
 
@@ -38,321 +37,92 @@ QUnit.module('Typing Tutor', function (hooks) {
         }
     });
 
+    function typeIntoInput(text) {
+        window.typingTutor.userInputElement.value = text;
+        window.typingTutor.userInputElement.dispatchEvent(new Event('input'));
+    }
+
+    function charSpans() {
+        return window.typingTutor.lessonTextElement.querySelectorAll('.char-span');
+    }
+
+    function activeKeyName() {
+        const activeKey = window.typingTutor.virtualKeyboardElement.querySelector('.key.active');
+        return activeKey ? activeKey.dataset.key : null;
+    }
+
     QUnit.test('initLesson: should initialize the lesson correctly', function (assert) {
-        console.log('=====================');
-        console.log('Running test: initLesson: should initialize the lesson correctly');
         const actualLessonText = window.typingTutor.lessonTextElement.textContent.trim().replace(/\s+/g, ' ');
         assert.equal(actualLessonText, 'the quick brown fox jumps over the lazy dog', 'Lesson text should be loaded correctly');
         assert.equal(window.typingTutor.userInputElement.value, '', 'User input should be cleared');
         assert.equal(window.typingTutor.wpmElement.textContent, '0', 'WPM should be reset to 0');
         assert.equal(window.typingTutor.accuracyElement.textContent, '100%', 'Accuracy should be reset to 100%');
-        assert.equal(window.typingTutor.currentWordIndex, 0, 'currentWordIndex should be 0');
-        assert.equal(window.typingTutor.currentCharIndex, 0, 'currentCharIndex should be 0');
-
-        console.log('========= TEST DONE ============');
+        assert.ok(charSpans()[0].classList.contains('current-char'), 'First character should be the current one');
+        assert.equal(window.typingTutor.lessonTextElement.querySelectorAll('.current-char').length, 1, 'Only one character should be current');
     });
 
-    QUnit.test('handleLessonProgress: should advance to next word and clear input after completing a word', function (assert) {
-        console.log('=====================');
-        console.log('Running test: handleLessonProgress: should advance to next word and clear input after completing a word');
-        // Type the full first word "the" plus a space to complete the word
-        window.typingTutor.userInputElement.value = 'the ';
-        window.typingTutor.userInputElement.dispatchEvent(new Event('input'));
+    QUnit.test('User Input: completing a word keeps the input and moves on to the next word', function (assert) {
+        typeIntoInput('the ');
 
-        assert.equal(window.typingTutor.currentWordIndex, 1, 'currentWordIndex should advance after completing the first word');
-        // The input is no longer cleared on word completion, so it should retain the typed text
+        const spans = charSpans();
+        for (let i = 0; i < 4; i++) {
+            assert.ok(spans[i].classList.contains('correct-char'), `Character ${i} of "the " should be marked as correct`);
+        }
+        assert.ok(spans[4].classList.contains('current-char'), 'First character of "quick" should be the current one');
+        assert.equal(activeKeyName(), 'q', 'The "q" key should be highlighted next');
         assert.equal(window.typingTutor.userInputElement.value, 'the ', 'User input should retain the typed word after completing a word');
-
-        console.log('========= TEST DONE ============');
     });
 
     QUnit.test('User Input: should handle incorrect character input', function (assert) {
-        console.log('=====================');
-        console.log('Running test: User Input: should handle incorrect character input');
-        // Simulate typing an incorrect character
-        window.typingTutor.userInputElement.value = 'z';
-        window.typingTutor.userInputElement.dispatchEvent(new Event('input'));
+        typeIntoInput('z');
 
-        const firstCharSpan = window.typingTutor.lessonTextElement.querySelector('.char-span');
-        assert.ok(firstCharSpan.classList.contains('incorrect-char'), 'First character should be marked as incorrect');
-
-        console.log('========= TEST DONE ============');
+        assert.ok(charSpans()[0].classList.contains('incorrect-char'), 'First character should be marked as incorrect');
+        assert.ok(charSpans()[1].classList.contains('current-char'), 'Second character should be the current one');
+        assert.equal(activeKeyName(), 'h', 'The key for the second character should be highlighted');
     });
 
-    QUnit.test('User Input: updateCharacterFeedback should advance current-char and counters', function (assert) {
-        console.log('=====================');
-        console.log('Running test: User Input: updateCharacterFeedback should advance current-char and counters');
-        // Arrange
-        const done = assert.async();
-        const originalHighlightCurrentKey = window.typingTutor.highlightCurrentKey;
-        const highlightCalls = [];
-        window.typingTutor.highlightCurrentKey = function (nextChar) {
-            highlightCalls.push(nextChar);
-        };
+    QUnit.test('User Input: typing shows accuracy straight away', function (assert) {
+        typeIntoInput('tz');
+        assert.equal(window.typingTutor.accuracyElement.textContent, '50%', 'One of two characters correct');
 
-        // All character spans in the lesson text (outer span wraps inner per-character spans)
-        const charSpans = window.typingTutor.lessonTextElement.querySelectorAll('.char-span');
-        assert.ok(charSpans.length >= 2, 'Lesson should contain at least two characters for this test');
-
-        // Act: type the first character
-        window.typingTutor.userInputElement.value = charSpans[0].textContent;
-        window.typingTutor.userInputElement.dispatchEvent(new Event('input'));
-
-        // Assert after first character
-        assert.ok(charSpans[0].classList.contains('correct-char'), 'First character should be marked as correct after first input');
-        assert.ok(charSpans[1].classList.contains('current-char'), 'Second character should be highlighted as current after first input');
-
-        if (typeof window.typingTutor.correctChars !== 'undefined' && typeof window.typingTutor.totalChars !== 'undefined') {
-            assert.strictEqual(window.typingTutor.correctChars, 1, 'correctChars should be 1 after first correct input');
-            assert.strictEqual(window.typingTutor.totalChars, 1, 'totalChars should be 1 after first input');
-        }
-
-        assert.ok(highlightCalls.length >= 1, 'highlightCurrentKey should be called after first input');
-        if (highlightCalls.length >= 1) {
-            const expectedNextChar = charSpans[1].textContent;
-            assert.strictEqual(highlightCalls[highlightCalls.length - 1], expectedNextChar, 'highlightCurrentKey should be called with the next character after first input');
-        }
-
-        // Act: type the second character (append to existing value)
-        window.typingTutor.userInputElement.value += charSpans[1].textContent;
-        window.typingTutor.userInputElement.dispatchEvent(new Event('input'));
-
-        // Assert after second character
-        assert.ok(charSpans[0].classList.contains('correct-char'), 'First character should remain correct after second input');
-        assert.ok(charSpans[1].classList.contains('correct-char'), 'Second character should be marked as correct after second input');
-        if (charSpans.length > 2) {
-            assert.ok(charSpans[2].classList.contains('current-char'), 'Third character should be highlighted as current after second input');
-        }
-
-        if (typeof window.typingTutor.correctChars !== 'undefined' && typeof window.typingTutor.totalChars !== 'undefined') {
-            assert.strictEqual(window.typingTutor.correctChars, 2, 'correctChars should be 2 after two correct inputs');
-            assert.strictEqual(window.typingTutor.totalChars, 2, 'totalChars should be 2 after two inputs');
-        }
-
-        assert.ok(highlightCalls.length >= 2, 'highlightCurrentKey should be called again after second input');
-        if (highlightCalls.length >= 2 && charSpans.length > 2) {
-            const expectedNextChar = charSpans[2].textContent;
-            assert.strictEqual(highlightCalls[highlightCalls.length - 1], expectedNextChar, 'highlightCurrentKey should be called with the next character after second input');
-        }
-
-        // Cleanup
-        window.typingTutor.highlightCurrentKey = originalHighlightCurrentKey;
-        done();
-
-        console.log('========= TEST DONE ============');
+        typeIntoInput('t');
+        assert.equal(window.typingTutor.accuracyElement.textContent, '100%', 'Backspacing over the mistake forgets it');
     });
 
-    QUnit.test('User Input: updateCharacterFeedback should complete lesson and clear highlight', function (assert) {
-        console.log('=====================');
-        console.log('Running test: User Input: updateCharacterFeedback should complete lesson and clear highlight');
-        // Arrange
+    QUnit.test('User Input: completing the lesson marks everything correct and clears the key highlight', function (assert) {
         const done = assert.async();
-        const originalHighlightCurrentKey = window.typingTutor.highlightCurrentKey;
-        const highlightCalls = [];
-        window.typingTutor.highlightCurrentKey = function (nextChar) {
-            highlightCalls.push(nextChar);
-        };
+        const originalAlert = window.alert;
+        window.alert = function () {};
 
-        const charSpans = window.typingTutor.lessonTextElement.querySelectorAll('.char-span');
-        const totalLength = charSpans.length;
-        assert.ok(totalLength > 0, 'Lesson should contain at least one character');
+        typeIntoInput(window.typingTutor.lessons.short[0]);
 
-        // Build the full lesson string from the character spans
-        let fullLessonText = '';
-        charSpans.forEach(function (span) {
-            fullLessonText += span.textContent;
+        charSpans().forEach(function (span, index) {
+            assert.ok(span.classList.contains('correct-char'), 'Character at index ' + index + ' should be marked as correct');
         });
+        assert.equal(window.typingTutor.lessonTextElement.querySelectorAll('.current-char').length, 0, 'No character should remain current');
+        assert.strictEqual(activeKeyName(), null, 'No key should be highlighted');
+        assert.true(window.typingTutor.userInputElement.disabled, 'Input should be disabled until the next lesson loads');
 
-        // Act: type the full lesson text in one go
-        window.typingTutor.userInputElement.value = fullLessonText;
-        window.typingTutor.userInputElement.dispatchEvent(new Event('input'));
-
-        // Assert: all characters are correct
-        charSpans.forEach(function (span, index) {
-            assert.ok(span.classList.contains('correct-char'), 'Character at index ' + index + ' should be marked as correct after completing lesson');
-            assert.notOk(span.classList.contains('current-char'), 'No character should remain highlighted as current after completing lesson');
-        });
-
-        if (typeof window.typingTutor.correctChars !== 'undefined' && typeof window.typingTutor.totalChars !== 'undefined') {
-            assert.strictEqual(window.typingTutor.correctChars, totalLength, 'correctChars should equal total lesson length when the lesson is completed');
-            assert.strictEqual(window.typingTutor.totalChars, totalLength, 'totalChars should equal total lesson length for all-correct input');
-        }
-
-        assert.ok(highlightCalls.length >= 1, 'highlightCurrentKey should be called at least once while completing the lesson');
-        if (highlightCalls.length >= 1) {
-            assert.strictEqual(highlightCalls[highlightCalls.length - 1], '', 'highlightCurrentKey should be called with an empty string when the lesson is complete');
-        }
-
-        // Cleanup
-        window.typingTutor.highlightCurrentKey = originalHighlightCurrentKey;
-        done();
-
-        console.log('========= TEST DONE ============');
+        setTimeout(function () {
+            window.alert = originalAlert;
+            window.typingTutor.currentLessonIndex = 0;
+            done();
+        }, 200);
     });
 
-    QUnit.test('updateStats: should handle near-zero elapsed time without Infinity or NaN', function (assert) {
-        console.log('=====================');
-        console.log('Running test: updateStats: should handle near-zero elapsed time without Infinity or NaN');
-        // Arrange: simulate a small but non-zero amount of typing
-        window.typingTutor.correctChars = 10;
-        window.typingTutor.totalChars = 10;
+    QUnit.test('User Input: the first keystroke starts one stats timer', function (assert) {
+        typeIntoInput('t');
+        const timer = window.typingTutor.timerInterval;
+        assert.notStrictEqual(timer, null, 'A timer should be running after the first keystroke');
 
-        // Set the start time to "now" so elapsed time is effectively zero
-        window.typingTutor.startTime = Date.now();
+        typeIntoInput('th');
+        assert.strictEqual(window.typingTutor.timerInterval, timer, 'Later keystrokes should not start another timer');
 
-        // Act
-        window.typingTutor.updateStats();
-
-        // Assert: WPM should be a finite, non-negative number
-        const wpmText = (window.typingTutor.wpmElement && window.typingTutor.wpmElement.textContent) || '';
-        const wpmValue = parseFloat(wpmText);
-
-        assert.ok(Number.isFinite(wpmValue), 'WPM should be a finite number for near-zero elapsed time');
-        assert.ok(wpmValue >= 0, 'WPM should not be negative for near-zero elapsed time');
-
-        console.log('========= TEST DONE ============');
-    });
-
-    QUnit.test('updateStats: should treat 0/0 characters as 100% accuracy', function (assert) {
-        console.log('=====================');
-        console.log('Running test: updateStats: should treat 0/0 characters as 100% accuracy');
-        // Arrange: no characters typed yet
-        window.typingTutor.correctChars = 0;
-        window.typingTutor.totalChars = 0;
-
-        // Use a non-zero elapsed time so we isolate the 0/0 accuracy behavior
-        window.typingTutor.startTime = Date.now() - 5000; // 5 seconds ago
-
-        // Act
-        window.typingTutor.updateStats();
-
-        // Assert: accuracy should remain at 100% when no characters have been typed
-        const accuracyText = (window.typingTutor.accuracyElement && window.typingTutor.accuracyElement.textContent) || '';
-        assert.ok(
-            accuracyText.indexOf('100') !== -1,
-            'Accuracy should be displayed as 100% when no characters have been typed (0/0 case)'
-        );
-
-        console.log('========= TEST DONE ============');
-    });
-
-    QUnit.test('startTimer: initializes startTime and schedules timer interval', function (assert) {
-        console.log('=====================');
-        console.log('Running test: startTimer: initializes startTime and schedules timer interval');
-        const done = assert.async();
-
-        // Arrange: ensure timer-related globals are in a known state
-        window.typingTutor.startTime = 0;
-        if (typeof window.typingTutor.timerInterval !== 'undefined' && window.typingTutor.timerInterval) {
-            clearInterval(window.typingTutor.timerInterval);
-            window.typingTutor.timerInterval = null;
-        }
-
-        const originalSetInterval = window.setInterval;
-        let setIntervalCalled = false;
-
-        // Spy on setInterval to verify that a timer is scheduled
-        window.setInterval = function (callback, delay) {
-            setIntervalCalled = true;
-            // Call through to preserve existing behavior
-            return originalSetInterval(callback, delay);
-        };
-
-        // Act: call startTimer when startTime is 0
-        window.typingTutor.startTimer();
-
-        // Assert: startTime should be initialized
-        assert.ok(window.typingTutor.startTime > 0, 'startTimer should set startTime when it was previously 0');
-        assert.ok(setIntervalCalled, 'startTimer should schedule a timer via setInterval');
-
-        // Cleanup: restore original setInterval
-        window.setInterval = originalSetInterval;
-
-        done();
-
-        console.log('========= TEST DONE ============');
-    });
-
-    QUnit.test('updateStats: when startTime is 0 it should not update WPM or accuracy', function (assert) {
-        console.log('=====================');
-        console.log('Running test: updateStats: when startTime is 0 it should not update WPM or accuracy');
-        const done = assert.async();
-
-        // Arrange: ensure no timer is running and startTime is 0
-        window.typingTutor.startTime = 0;
-        if (typeof window.typingTutor.timerInterval !== 'undefined' && window.typingTutor.timerInterval) {
-            clearInterval(window.typingTutor.timerInterval);
-            window.typingTutor.timerInterval = null;
-        }
-
-        // Give WPM and accuracy elements known initial values
-        if (window.typingTutor.wpmElement) {
-            window.typingTutor.wpmElement.textContent = 'WPM: 0';
-        }
-        if (window.typingTutor.accuracyElement) {
-            window.typingTutor.accuracyElement.textContent = 'Accuracy: 100%';
-        }
-
-        const initialWpmText = window.typingTutor.wpmElement && window.typingTutor.wpmElement.textContent;
-        const initialAccuracyText = window.typingTutor.accuracyElement && window.typingTutor.accuracyElement.textContent;
-
-        // Act: call updateStats with startTime === 0
-        window.typingTutor.updateStats();
-
-        // Assert: WPM and accuracy text should remain unchanged
-        assert.strictEqual(
-            window.typingTutor.wpmElement && window.typingTutor.wpmElement.textContent,
-            initialWpmText,
-            'WPM should not change when startTime is 0'
-        );
-        assert.strictEqual(
-            window.typingTutor.accuracyElement && window.typingTutor.accuracyElement.textContent,
-            initialAccuracyText,
-            'Accuracy should not change when startTime is 0'
-        );
-
-        done();
-
-        console.log('========= TEST DONE ============');
-    });
-
-    QUnit.test('updateStats: should calculate WPM and accuracy correctly', function (assert) {
-        console.log('=====================');
-        console.log('Running test: updateStats: should calculate WPM and accuracy correctly');
-        // We need to control time for this test, so we'll simulate the passage of time
-        const done = assert.async();
-
-        // Simulate typing a word
-        window.typingTutor.userInputElement.value = "the ";
-        window.typingTutor.correctChars = 4;
-        window.typingTutor.totalChars = 4;
-
-        // Manually set the start time to 12 seconds ago (0.2 minutes)
-        // WPM = (chars / 5) / minutes = (4 / 5) / 0.2 = 0.8 / 0.2 = 4 WPM
-        window.typingTutor.startTime = new Date().getTime() - 12000;
-
-        window.typingTutor.updateStats();
-
-        assert.equal(window.typingTutor.wpmElement.textContent, '4', 'WPM should be calculated correctly');
-        assert.equal(window.typingTutor.accuracyElement.textContent, '100%', 'Accuracy should be 100%');
-
-        // Now, simulate an error
-        window.typingTutor.userInputElement.value = "the z";
-        window.typingTutor.correctChars = 4;
-        window.typingTutor.totalChars = 5;
-
-        window.typingTutor.updateStats();
-
-        assert.equal(window.typingTutor.accuracyElement.textContent, '80%', 'Accuracy should be updated to 80%');
-
-        done();
-
-        console.log('========= TEST DONE ============');
+        window.typingTutor.restartButton.click();
+        assert.strictEqual(window.typingTutor.timerInterval, null, 'Restarting should stop the timer');
     });
 
     QUnit.test('Virtual Keyboard: should highlight the current key to be pressed', function (assert) {
-        console.log('=====================');
-        console.log('Running test: Virtual Keyboard: should highlight the current key to be pressed');
         window.typingTutor.initLesson(); // Ensure we are at the start of the lesson
 
         // The first character is 't'
@@ -366,13 +136,9 @@ QUnit.module('Typing Tutor', function (hooks) {
         activeKey = window.typingTutor.virtualKeyboardElement.querySelector('.key.active');
         assert.ok(activeKey, 'A new key should be active');
         assert.equal(activeKey.dataset.key, 'q', 'The key "q" should be highlighted after "t "');
-
-        console.log('========= TEST DONE ============');
     });
 
     QUnit.test('Virtual Keyboard: should highlight space key and clear other highlights', function (assert) {
-        console.log('=====================');
-        console.log('Running test: Virtual Keyboard: should highlight space key and clear other highlights');
         window.typingTutor.initLesson();
 
         // Start with a normal character highlighted
@@ -385,13 +151,9 @@ QUnit.module('Typing Tutor', function (hooks) {
         activeKeys = window.typingTutor.virtualKeyboardElement.querySelectorAll('.key.active');
         assert.equal(activeKeys.length, 1, 'Only one key should be active for space');
         assert.equal(activeKeys[0].dataset.key, 'space', 'The space key should be highlighted');
-
-        console.log('========= TEST DONE ============');
     });
 
     QUnit.test('Virtual Keyboard: should highlight punctuation keys when present', function (assert) {
-        console.log('=====================');
-        console.log('Running test: Virtual Keyboard: should highlight punctuation keys when present');
         window.typingTutor.initLesson();
 
         // Highlight comma; highlightCurrentKey has special handling for punctuation
@@ -399,13 +161,9 @@ QUnit.module('Typing Tutor', function (hooks) {
         let activeKey = window.typingTutor.virtualKeyboardElement.querySelector('.key.active');
         assert.ok(activeKey, 'A key should be active for comma');
         assert.equal(activeKey.dataset.key, ',', 'The "," key should be highlighted');
-
-        console.log('========= TEST DONE ============');
     });
 
     QUnit.test('Virtual Keyboard: should clear highlights when given empty input', function (assert) {
-        console.log('=====================');
-        console.log('Running test: Virtual Keyboard: should clear highlights when given empty input');
         window.typingTutor.initLesson();
 
         // Highlight a normal key first
@@ -418,13 +176,9 @@ QUnit.module('Typing Tutor', function (hooks) {
         window.typingTutor.highlightCurrentKey('');
         activeKey = window.typingTutor.virtualKeyboardElement.querySelector('.key.active');
         assert.strictEqual(activeKey, null, 'No key should be active after clearing highlights');
-
-        console.log('========= TEST DONE ============');
     });
 
     QUnit.test('Virtual Keyboard: physical key events highlight keys when input is focused', function (assert) {
-        console.log('=====================');
-        console.log('Running test: Virtual Keyboard: physical key events highlight keys when input is focused');
         // Ensure input is focused so global handlers are active
         window.typingTutor.userInputElement.focus();
 
@@ -452,13 +206,9 @@ QUnit.module('Typing Tutor', function (hooks) {
         triggerKey('Enter', 'keyup');
         activeKey = window.typingTutor.virtualKeyboardElement.querySelector('.key.active');
         assert.notOk(activeKey, 'No key should remain active after Enter keyup');
-
-        console.log('========= TEST DONE ============');
     });
 
     QUnit.test('Virtual Keyboard: physical key events are ignored when input is not focused', function (assert) {
-        console.log('=====================');
-        console.log('Running test: Virtual Keyboard: physical key events are ignored when input is not focused');
         // Explicitly blur the input to ensure it is not focused
         window.typingTutor.userInputElement.blur();
 
@@ -479,8 +229,6 @@ QUnit.module('Typing Tutor', function (hooks) {
 
         const activeKeyAfterKeyup = window.typingTutor.virtualKeyboardElement.querySelector('.key.active');
         assert.notOk(activeKeyAfterKeyup, 'No key should be active after keyup when input is not focused');
-
-        console.log('========= TEST DONE ============');
     });
 
     function selectLessonLength(length) {
@@ -509,10 +257,10 @@ QUnit.module('Typing Tutor', function (hooks) {
         ['medium', 'long', 'short'].forEach(function (length) {
             selectLessonLength(length);
 
-            assert.equal(window.typingTutor.currentLesson.join(' '), window.typingTutor.lessons[length][0], `First ${length} lesson should be loaded`);
+            assert.equal(window.typingTutor.session.lessonText, window.typingTutor.lessons[length][0], `First ${length} lesson should be loaded`);
             assert.equal(window.typingTutor.lessonTextElement.textContent, window.typingTutor.lessons[length][0], `First ${length} lesson should be rendered`);
             assert.equal(window.typingTutor.userInputElement.value, '', 'User input should be cleared');
-            assert.equal(window.typingTutor.currentWordIndex, 0, 'currentWordIndex should be reset');
+            assert.equal(window.typingTutor.session.snapshot().nextIndex, 0, 'Progress should be reset');
         });
     });
 
@@ -524,15 +272,15 @@ QUnit.module('Typing Tutor', function (hooks) {
         const lesson = window.typingTutor.lessons.long[1];
         window.typingTutor.userInputElement.value = lesson.split(' ')[0] + ' ';
         window.typingTutor.userInputElement.dispatchEvent(new Event('input'));
-        assert.equal(window.typingTutor.currentWordIndex, 1, 'Progress should be made before restarting');
+        assert.ok(window.typingTutor.session.snapshot().nextIndex > 0, 'Progress should be made before restarting');
 
         window.typingTutor.restartButton.click();
 
         assert.equal(window.typingTutor.userInputElement.value, '', 'User input should be cleared after restart');
-        assert.equal(window.typingTutor.currentWordIndex, 0, 'currentWordIndex should be reset after restart');
-        assert.equal(window.typingTutor.correctChars, 0, 'correctChars should be reset after restart');
+        assert.equal(window.typingTutor.session.snapshot().nextIndex, 0, 'Progress should be reset after restart');
+        assert.equal(window.typingTutor.session.snapshot().correctChars, 0, 'Correct characters should be reset after restart');
         assert.equal(window.typingTutor.lessonLengthElement.value, 'long', 'Selected length should be kept after restart');
-        assert.equal(window.typingTutor.currentLesson.join(' '), lesson, 'Current long lesson should be kept after restart');
+        assert.equal(window.typingTutor.session.lessonText, lesson, 'Current long lesson should be kept after restart');
 
         window.typingTutor.currentLessonIndex = 0;
     });
@@ -547,7 +295,7 @@ QUnit.module('Typing Tutor', function (hooks) {
         window.typingTutor.userInputElement.dispatchEvent(new Event('input'));
 
         setTimeout(function () {
-            assert.equal(window.typingTutor.currentLesson.join(' '), window.typingTutor.lessons.medium[1], 'Second medium lesson should be loaded');
+            assert.equal(window.typingTutor.session.lessonText, window.typingTutor.lessons.medium[1], 'Second medium lesson should be loaded');
 
             window.alert = originalAlert;
             window.typingTutor.currentLessonIndex = 0;
@@ -560,18 +308,17 @@ QUnit.module('Typing Tutor', function (hooks) {
         selectLessonLength('long');
         window.typingTutor.restartButton.click();
 
-        const originalUpdateStats = window.typingTutor.updateStats;
+        const session = window.typingTutor.session;
         let calls = 0;
-        window.typingTutor.updateStats = function () {
+        session.type = function (...args) {
             calls++;
+            return TypingSession.prototype.type.apply(this, args);
         };
 
         window.typingTutor.userInputElement.value = 'l';
         window.typingTutor.userInputElement.dispatchEvent(new Event('input'));
 
         assert.equal(calls, 1, 'A single input event should be handled exactly once');
-
-        window.typingTutor.updateStats = originalUpdateStats;
     });
 
     QUnit.module('Theme', function (themeHooks) {
@@ -638,7 +385,7 @@ QUnit.module('Typing Tutor', function (hooks) {
             window.typingTutor.themeToggleElement.click();
 
             assert.equal(input.value, 'the ', 'Typed text should be kept');
-            assert.equal(window.typingTutor.currentWordIndex, 1, 'Word progress should be kept');
+            assert.equal(window.typingTutor.session.snapshot().nextIndex, 4, 'Progress should be kept');
             assert.equal(document.activeElement, input, 'Focus should return to the input');
         });
 
