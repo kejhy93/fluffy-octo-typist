@@ -63,10 +63,10 @@ QUnit.module('Typing Session', function () {
     QUnit.test('WPM counts five correct characters as one word, from the first keystroke', function (assert) {
         const session = new TypingSession('abcde fghij');
         session.type('a', 1000);
-        const snapshot = session.type('abcdexfghij', 1000 + 60000);
+        const snapshot = session.type('abcde zzzzz', 1000 + 60000);
 
-        // 10 correct characters = 2 words in one minute
-        assert.equal(snapshot.wpm, 2);
+        // 6 correct characters = 1.2 words in one minute; all 11 typed characters would give 2
+        assert.equal(snapshot.wpm, 1);
     });
 
     QUnit.test('WPM is 0 when no time has passed', function (assert) {
@@ -92,16 +92,16 @@ QUnit.module('Typing Session', function () {
 
     QUnit.test('stats uses the latest typing at a later time', function (assert) {
         const session = new TypingSession('abcdefghij');
-        session.type('abcdefghix', 0);
+        session.type('abcdexxxxx', 0);
 
-        assert.deepEqual(session.stats(60000), { wpm: 2, accuracy: 90 }, '9 correct of 10: 1.8 words in one minute rounds to 2');
+        assert.deepEqual(session.stats(60000), { wpm: 1, accuracy: 50 }, '5 correct of 10: 1 word in one minute (all 10 typed would give 2)');
     });
 
     QUnit.test('snapshot returns the latest result without changing it', function (assert) {
         const session = new TypingSession('ab');
-        const typed = session.type('a', 0);
+        const expected = JSON.parse(JSON.stringify(session.type('a', 0)));
 
-        assert.deepEqual(session.snapshot(), typed);
-        assert.deepEqual(session.snapshot(), typed, 'Calling it twice gives the same answer');
+        assert.deepEqual(session.snapshot(), expected);
+        assert.deepEqual(session.snapshot(), expected, 'Calling it twice gives the same answer');
     });
 });

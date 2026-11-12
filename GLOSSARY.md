@@ -13,5 +13,5 @@ How long a Lesson is: short, medium or long.
 _Avoid_: Difficulty, level
 
 **Typing Session**:
-One attempt at a Lesson, from the first keystroke until the Lesson is completed or restarted. A Typing Session decides which characters are correct, what comes next, when the Lesson is complete, and the WPM and accuracy for that attempt.
+The typing of one Lesson, from the first keystroke until the Lesson is completed or restarted. A Typing Session decides which characters are correct, what comes next, when the Lesson is complete, and its WPM and accuracy.
 _Avoid_: Attempt, run, game

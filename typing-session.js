@@ -1,4 +1,4 @@
-// One attempt at a Lesson: decides which characters are correct, what comes next,
+// The typing of one Lesson: decides which characters are correct, what comes next,
 // when the Lesson is complete, and the WPM and accuracy. No DOM, no timers;
 // callers pass the current time in milliseconds.
 class TypingSession {

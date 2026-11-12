@@ -33,7 +33,7 @@ class TypingTutor {
         };
 
         this.currentLessonIndex = 0;
-        this.session = null; // The Typing Session for the current attempt
+        this.session = null; // The Typing Session for the Lesson on screen
         this.timerInterval = null;
         this.lessonCompleteTimeout = null;
 
